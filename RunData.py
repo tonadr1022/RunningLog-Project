@@ -11,7 +11,7 @@ class RunLog():
     fileName = ''
     SAVE_PATH = '/Users/tony/Documents/PersonalPython/RunningLog Project/'
     COLUMNS = ['Date', 'Year', 'Month', 'Day',
-               'Distance', 'Hours', 'Minutes', 'Seconds', 'Notes']
+               'Distance', 'Hours', 'Minutes', 'Seconds', 'WeekDay', 'Notes']
     fileCounter = 0
     overallStats = {}
 
@@ -27,29 +27,41 @@ class RunLog():
 
         path = Path(self.completeName)
         if path.is_file():
-            self.log = pd.read_csv(path)
+            self.log = pd.read_csv(path, index_col=False)
         else:
             self.log = pd.DataFrame(columns=self.COLUMNS)
 
-    def addRun(self, date, year, month, day, distance, hours, minutes, seconds, notes):
+    def addRun(self, date, year, month, day, distance, hours, minutes, seconds, weekDay, notes):
 
         entryDict = {'Date': date, 'Year': year, 'Month': month,
                      'Day': day, 'Distance': distance, 'Hours': hours,
-                     'Minutes': minutes, 'Seconds': seconds, 'Notes': notes}
-
-        self.log = self.log.append(entryDict, ignore_index=True)
+                     'Minutes': minutes, 'Seconds': seconds, 'WeekDay': weekDay, 'Notes': notes}
+        for i in range(10):
+            self.log = self.log.append(
+                entryDict, ignore_index=True)
 
         print(self.log)
 
     def saveToFile(self):
         self.log.to_csv(self.completeName, index=False)
 
-    def getGraphData(self):
-        graph1d = self.log.loc[:20, ['Date', 'Distance']]
-        return graph1d
+    def getGraphData(self, graphType):
+        if self.log.empty:
+            return None
+        if graphType == 'day':
+            self.log['Date'] = pd.to_datetime(self.log['Date'])
+            df = self.log.groupby(self.log['Date'])
+            print(df)
+            df['WeekDay'] = df['Date'].dt.day_name()
+            df.sort_values(by='Date')
+            print(df)
+            graph1d = df.loc[-7:, ['WeekDay', 'Distance']]
+            return None
 
     def setOverallStats(self):
-        dfOverallTotals = self.log.loc[:20, [
+        if self.log.empty:
+            return
+        dfOverallTotals = self.log.loc[:10, [
             'Distance', 'Hours', 'Minutes', 'Seconds']]
         print(dfOverallTotals)
         sum = dfOverallTotals.sum()

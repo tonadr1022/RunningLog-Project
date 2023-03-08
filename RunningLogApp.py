@@ -7,6 +7,7 @@ from functools import partial
 import re
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import calendar
 
 
 class AddRunWin:
@@ -15,10 +16,11 @@ class AddRunWin:
 
     def __init__(self, log):
         def submit():
-            day = int(self.dateList[1])
             month = int(self.dateList[0])
+            day = int(self.dateList[1])
             year = int('20' + self.dateList[2])
             date = datetime.date(year, month, day)
+            weekDay = calendar.day_name[datetime.date.weekday(date)]
             distance = float(distanceEntry.get())
             time = timeEntry.get()
             hours = int(time[:2])
@@ -29,12 +31,13 @@ class AddRunWin:
             notes = str(notesEntry.get("1.0", 'end-1c'))
 
             RunLog.addRun(
-                log, date, year, month, day, distance, hours, minutes, seconds, notes)
+                log, date, year, month, day, distance, hours, minutes, seconds, weekDay, notes)
 
             addRunWindow.destroy()
 
         def set_date():
             date = cal.get_date()
+            # split the date into list of three elements
             self.dateList = re.split('/', date)
             dateLabel.config(text=date)
 
@@ -105,16 +108,19 @@ class main:
     currentYear = int(currentDate[:4])
 
     def __init__(self, master):
-        def plot():
-            fig = plt.Figure(figsize=(4, 4), dpi=80)
+        def plot(graphType):
+            fig = plt.Figure(figsize=(8, 4), dpi=80)
             ax = fig.add_subplot(111)
             chart_type = FigureCanvasTkAgg(fig, mainFrame)
             chart_type.get_tk_widget().grid(row=2, column=0)
-            df = RunLog.getGraphData(log)
-            df = df[['Date', 'Distance']]
-            df.set_index('Date')
-            df.plot(kind='bar', legend=True, ax=ax)
-            ax.set_title('Title here')
+            df = RunLog.getGraphData(log, graphType)
+            if df is None:
+                return
+            df = df[['WeekDay', 'Distance']]
+            ax.bar(df['WeekDay'], df['Distance'])
+            # df.set_index('Date')
+            # df.plot(kind='bar', legend=True, ax=ax)
+            # ax.set_title('Title here')
 
         self.master = master
         log = RunLog()
@@ -140,7 +146,8 @@ class main:
         addRunBut = ttk.Button(mainFrame, text="Add Run", style='my.TButton',
                                command=partial(AddRunWin, log))
         addRunBut.grid(row=1, column=0, pady=25)
-        plot()
+        graphType = 'day'
+        plot(graphType)
         statsHeaderLabel = ttk.Label(mainFrame, text='Statistics', style='my.TLabel',
                                      font=('Comic Sans MS', 30))
         statsHeaderLabel.grid(row=3, column=0, pady=10)
